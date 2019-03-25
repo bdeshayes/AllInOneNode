@@ -1,0 +1,22 @@
+{
+  "name": "allinonenode",
+  "version": "1.0.0",
+  "description": "All In One Node.js",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.16.4",
+    "express-async-handler": "^1.1.4",
+    "express-fileupload": "^1.1.3-alpha.1",
+    "mongodb": "^3.1.13",
+    "sql-escape-string": "^1.1.0",
+    "sql-parse": "^0.1.5",
+    "sqlite3": "^4.0.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "Bruno Deshayes",
+  "license": "ISC"
+}
