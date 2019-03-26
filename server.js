@@ -5,6 +5,8 @@
 //##################################################
 
 /*
+fixed MongoDB -id no recognised as string
+fixed missing table name
 */
 
 const path = require('path');
@@ -298,9 +300,18 @@ app.post('/', (req, res, next) =>
                     }
                 }
                 
+            for (var i=0; i< mydata.length; i++) // MongoDB doesn't like strings as _id
+                {
+                 for (key in mydata[i]) 
+                    {
+                    if (key == '_id')
+                        mydata[i]._id = ObjectID(mydata[i]._id);
+                    }
+                }
+                
             db.collection(table).drop(function(err, delOK) 
                 {
-                if (err) throw err;
+                //if (err) throw err; // keep quiet if deleting non existing table
                 if (delOK) console.log("Collection deleted");
 
                 db.collection(table).insertMany(mydata, (err, result) => 
@@ -317,6 +328,17 @@ app.post('/', (req, res, next) =>
     if (req.body.button === 'load JSON file')
         {
         table = req.body.table;
+        
+        if (table == '') // user didn't give us a table name - let's make one up
+            {
+            var charset = "abcdefghijklmnopqrstuvwxyz0123456789";    
+            
+            for (var i = 0; i < 15; i++)
+                table += charset.charAt(Math.floor(Math.random() * charset.length));
+
+            content += `<h4>table= no table name entered - just made one up ${table}</h4>`;
+            }
+            
         db.collection(table).drop(function(err, delOK) 
             {
             //if (err) throw err;
@@ -333,6 +355,16 @@ app.post('/', (req, res, next) =>
 
                 var fs = require('fs');
                 var mydata = JSON.parse(fs.readFileSync(store, 'utf8'));
+                
+                for (var i=0; i< mydata.length; i++) // MongoDB doesn't like strings as _id
+                    {
+                     for (key in mydata[i]) 
+                        {
+                        if (key == '_id')
+                            mydata[i]._id = ObjectID(mydata[i]._id);
+                        }
+                    }
+                    
                 db.collection(table).insertMany(mydata, (err, result) => 
                     {
                     if (err) return console.log(err)
@@ -364,6 +396,7 @@ app.post('/', (req, res, next) =>
 
     else if (req.body.button === 'SAVE')
         {
+        //var ObjectID = require('mongodb').ObjectID;
         var id = req.body.row;
         table = req.body.table;
         delete req.body.button;
@@ -381,6 +414,7 @@ app.post('/', (req, res, next) =>
         
     else if (req.body.button === 'DELETE')
         {
+        //var ObjectID = require('mongodb').ObjectID;
         var id = req.body.row;
         table = req.body.table;
         delete req.body.button;
@@ -439,9 +473,23 @@ else if ("pick" in req.query)
     res.redirect('/');
     }
 
+else if ((table == '') || (req.query.menu == 'list'))
+    {
+    db.listCollections().toArray(function(err, collInfos) 
+        {
+        //console.log(db);
+        //console.log(collInfos);
+        var content = `<div style="text-align: center"><h2>collections found in ${db.s.databaseName}</h2>`;
+        for (var i=0; i < collInfos.length; i++)
+            content += `<a href="/?pick=${collInfos[i].name}">${collInfos[i].name}</a><br />`;
+
+        content += '<br /></div>';
+        res.send(RenderPage(content));
+       });
+    }
+
 else if (req.query.menu == 'demo') 
     {
-    table = 'demo';
     let mydata =
 [
 	{
@@ -481,24 +529,6 @@ else if (req.query.menu == 'demo')
          console.log(result);
         res.redirect ('/');
         })
-    }
-
-else if ((table == '') || (req.query.menu == 'list'))
-    {
-    db.listCollections().toArray(function(err, collInfos) 
-        {
-        //console.log(db);
-        //console.log(collInfos);
-        var content = `<div style="text-align: center"><h2>collections found in ${db.s.databaseName}</h2>`;
-        for (var i=0; i < collInfos.length; i++)
-            content += `<a href="/?pick=${collInfos[i].name}">${collInfos[i].name}</a><br />`;
-
-        content += '<br /></div>';
-        if (collInfos.length == 0)
-            content = `<div style="text-align: center">no collections found in ${db.s.databaseName}!<br /><br /><a href="/?menu=demo">Want to create some demo data ?</a><br /><br /></div>`;
-        
-        res.send(RenderPage(content));
-       });
     }
 
 else if (req.query.menu == 'dump')
@@ -579,7 +609,6 @@ else if ("row" in req.query)
         content = '<table id="Schlumpf">';
         content += '<form class="edittable" action="/" name="myform" method="post">';
         var myrow = result[0];
-        console.log(result);
          for (key in myrow) 
             {
             if (key != '_id')
